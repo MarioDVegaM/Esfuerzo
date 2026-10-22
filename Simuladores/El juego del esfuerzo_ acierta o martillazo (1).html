@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Juego: esfuerzo y martillazos</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--mut:#5d6779;--bd:#d9dee6;--acc:#2563eb;--cv:#dfe9f5;--ok:#15803d;--okb:#dcfce7;--bad:#b91c1c;--badb:#fee2e2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#1a2232;--ok:#4ade80;--okb:#12301f;--bad:#f87171;--badb:#3a1616;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#1a2232;--ok:#4ade80;--okb:#12301f;--bad:#f87171;--badb:#3a1616;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:14px 16px 4px;max-width:760px;margin:auto}h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+.wrap{max-width:760px;margin:auto;padding:8px 16px 24px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+#stage{background:var(--cv);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:12px}
+svg{display:block;width:100%;height:auto}svg text{fill:var(--fg);font-family:system-ui,sans-serif}
+.shake{animation:sh .35s}@keyframes sh{0%,100%{transform:translate(0)}20%{transform:translate(-7px,2px)}40%{transform:translate(6px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(3px,0)}}
+.bar{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.q{font-size:17px;font-weight:600;margin:0 0 12px}
+.opt{display:block;width:100%;text-align:left;padding:11px 12px;margin:0 0 8px;border:1.5px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:10px;font:inherit;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--acc)}.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--okb)}.opt.no{border-color:var(--bad);background:var(--badb)}
+.fb{margin:6px 0 10px;padding:10px 12px;border-radius:10px;font-size:14px}.fb.ok{background:var(--okb);color:var(--ok)}.fb.no{background:var(--badb);color:var(--bad)}.fb span{color:var(--fg)}
+.btn{padding:10px 18px;border:0;border-radius:10px;background:var(--acc);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+input[type=text]{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;margin:8px 0 12px}
+.hid{display:none}.big{font-size:44px;margin:0}.sm{font-size:13px;color:var(--mut)}
+.snd{float:right;background:none;border:1px solid var(--bd);border-radius:8px;color:var(--fg);padding:2px 8px;cursor:pointer}
+</style></head><body>
+<header><h1>🔨 El juego del esfuerzo</h1><p>10 preguntas del Tema I. Si aciertas, tu muñeco avanza. Si fallas, ¡martillazo!</p></header>
+<div class="wrap">
+<div id="stage"><svg id="sv" viewBox="0 0 640 190" role="img" aria-label="Escenario del juego">
+<rect x="0" y="150" width="640" height="40" fill="var(--bd)"/>
+<g id="ticks"></g>
+<g transform="translate(602,150)"><rect x="-2" y="-70" width="4" height="70" fill="var(--mut)"/><path d="M2,-70 L34,-58 L2,-46Z" fill="#e11d48"/></g>
+<g id="pz"><text id="nm" x="0" y="-104" text-anchor="middle" font-size="12" font-weight="700"></text>
+<g id="body"><rect x="-9" y="-28" width="7" height="28" rx="3" fill="#334155"/><rect x="2" y="-28" width="7" height="28" rx="3" fill="#334155"/>
+<rect x="-13" y="-58" width="26" height="32" rx="7" fill="#2563eb"/><rect x="-22" y="-56" width="9" height="6" rx="3" fill="#2563eb"/><rect x="13" y="-56" width="9" height="6" rx="3" fill="#2563eb"/>
+<circle cx="0" cy="-72" r="15" fill="#fcd5b0" stroke="#b9845a"/><path d="M-17,-76 A17 15 0 0 1 17,-76Z" fill="#facc15" stroke="#a16207"/><rect x="-19" y="-77" width="38" height="4" rx="2" fill="#facc15" stroke="#a16207"/>
+<g id="fa"><circle cx="-5" cy="-70" r="2" fill="#111"/><circle cx="5" cy="-70" r="2" fill="#111"/><path d="M-5,-64 Q0,-59 5,-64" stroke="#111" fill="none" stroke-width="1.6"/></g>
+<g id="fd" class="hid"><path d="M-8,-73 L-3,-67 M-3,-73 L-8,-67 M3,-73 L8,-67 M8,-73 L3,-67" stroke="#111" stroke-width="1.6"/><ellipse cx="0" cy="-61" rx="4" ry="2.5" fill="#7f1d1d"/></g></g>
+<g id="st" class="hid"><text x="-28" y="-92" font-size="16">★</text><text x="14" y="-98" font-size="14">★</text><text x="-6" y="-106" font-size="12">✦</text></g></g>
+<g id="hm" class="hid"><rect x="-4" y="-72" width="8" height="72" rx="3" fill="#a16207"/><rect x="-24" y="-26" width="48" height="26" rx="5" fill="#64748b" stroke="#334155" stroke-width="2"/><rect x="-24" y="-26" width="48" height="7" rx="3" fill="#94a3b8"/></g>
+</svg></div>
+
+<div id="start" class="card"><h2 style="margin:0 0 4px;font-size:18px">Participante</h2><div class="sm">Escribe un nombre para tu muñeco (opcional).</div>
+<input id="inm" type="text" maxlength="14" placeholder="Nombre" autocomplete="off"><button class="btn" id="go">Comenzar</button></div>
+
+<div id="game" class="card hid"><div class="bar"><span id="pg"></span><span>✔ <b id="sc">0</b> · 🔨 <b id="ha">0</b> <button class="snd" id="snd" aria-label="Sonido">🔊</button></span></div>
+<p class="q" id="qt"></p><div id="ops"></div><div id="fb" class="fb hid"></div><button class="btn hid" id="nx">Siguiente</button></div>
+
+<div id="end" class="card hid" style="text-align:center"><p class="big" id="ei"></p><h2 id="et" style="margin:4px 0"></h2><p id="ee" class="sm"></p><button class="btn" id="again">Jugar otra vez</button></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const Q=[
+{q:"Una barra con sección transversal de 200 mm² soporta una fuerza axial P = 20 kN. ¿Cuál es el esfuerzo normal promedio?",o:["100 MPa","10 MPa","4 000 MPa","1 MPa"],e:"σ = P/A = 20 000 N / 200 mm² = 100 MPa (ecuación 2)."},
+{q:"Según la convención del texto, el esfuerzo normal en un miembro sometido a compresión se escribe con signo:",o:["Negativo (−)","Positivo (+)","Cero","No lleva signo"],e:"Tensión (+) si la fuerza jala al elemento; compresión (−) si lo empuja."},
+{q:"Un perno pasa de cortante simple a cortante doble, con la misma fuerza V y la misma área A. ¿Qué ocurre?",o:["Hay dos áreas de corte y τ se reduce a la mitad","Hay una sola área de corte y τ se duplica","Hay dos áreas de corte y τ se duplica","Hay tres áreas de corte y τ baja a la tercera parte"],e:"En cortante doble hay dos líneas de corte: τ = V/2A, la mitad de V/A."},
+{q:"Un pasador en cortante doble soporta V = 24 kN y su área es A = 60 mm². ¿Cuánto vale el esfuerzo cortante promedio?",o:["200 MPa","400 MPa","100 MPa","800 MPa"],e:"τ = V/2A = 24 000 N / (2 · 60 mm²) = 200 MPa (ecuación 7)."},
+{q:"Un perno de 10 mm de diámetro atraviesa una placa de 8 mm de espesor y transmite F = 16 kN. ¿Cuál es el esfuerzo de aplastamiento?",o:["200 MPa","100 MPa","400 MPa","20 MPa"],e:"σb = F/(t·d) = 16 000 N / (8 mm · 10 mm) = 200 MPa (ecuación 8). Se usa el área proyectada."},
+{q:"Una barra de sección a × b se corta con un plano inclinado un ángulo α respecto al eje. ¿Cuánto vale el área del plano inclinado?",o:["A = a·b / sen α","A = a·b · sen α","A = a·b / cos α","A = a·b"],e:"c = a / sen α y A = c·b = a·b / sen α (Figura 13)."},
+{q:"Al descomponer la fuerza F en el triángulo de fuerzas del plano inclinado, la componente normal al plano es:",o:["N = F sen α","N = F cos α","N = F tan α","N = F / sen α"],e:"sen α = N/F, entonces N = F sen α. La componente tangencial es V = F cos α."},
+{q:"Si el plano de corte es la sección transversal (α = 90°), ¿cuánto valen τ y σ?",o:["τ = 0 y σ = F/(a·b)","τ = F/(a·b) y σ = 0","τ = F/(2a·b) y σ = F/(2a·b)","τ y σ son máximos al mismo tiempo"],e:"τ = F cos α sen α /(a·b) = 0 y σ = F sen²α /(a·b) = F/(a·b)."},
+{q:"Un material tiene esfuerzo de falla de 250 MPa y el esfuerzo actuante es de 125 MPa. ¿Cuál es el factor de seguridad y qué ocurre?",o:["FS = 2: no falla","FS = 0,5: falla","FS = 125: no falla","FS = 375: falla"],e:"FS = esfuerzo de falla / esfuerzo actuante = 250/125 = 2. Con FS ≥ 1 no falla; con FS < 1 falla."},
+{q:"Si el esfuerzo de falla es 24 ksi y se exige un FS = 1,5, ¿cuánto vale el esfuerzo permisible?",o:["16 ksi","36 ksi","24 ksi","1,5 ksi"],e:"σperm = σfalla / FS = 24 ksi / 1,5 = 16 ksi."}];
+let G,i,sc,ha,step,locked=false,mute=false,AC;
+const GY=150,X=s=>50+s*52,sv=$('sv'),pz=$('pz'),hm=$('hm');
+for(let s=0;s<=10;s++)$('ticks').insertAdjacentHTML('beforeend','<line x1="'+X(s)+'" y1="150" x2="'+X(s)+'" y2="158" stroke="var(--mut)"/><text x="'+X(s)+'" y="174" font-size="10" text-anchor="middle" style="fill:var(--mut)">'+s+'</text>');
+function put(x,sy,dy){pz.setAttribute('transform','translate('+x+','+(GY+(dy||0))+') scale(1,'+(sy||1)+')')}
+function tw(ms,f){return new Promise(r=>{const t0=performance.now();(function k(n){const t=Math.min(1,(n-t0)/ms);f(t);t<1?requestAnimationFrame(k):r()})(t0)})}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function tone(f,d,ty,t0,v,f2){if(mute)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+(t0||0);o.type=ty||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
+async function walk(){const a=X(step),b=X(step+1);step++;await tw(650,t=>put(a+(b-a)*t,1,-Math.abs(Math.sin(t*Math.PI*2))*14))}
+async function hit(){const x=X(step),iy=GY-92;hm.classList.remove('hid');
+ await tw(420,t=>hm.setAttribute('transform','translate('+x+','+(iy-130*(1-t*t))+') rotate('+(38*(1-t))+')'));
+ tone(120,.25,'square',0,.25,40);tone(900,.08,'triangle',0,.1,300);
+ $('fa').classList.add('hid');$('fd').classList.remove('hid');$('st').classList.remove('hid');
+ sv.parentElement.classList.remove('shake');void sv.offsetWidth;sv.parentElement.classList.add('shake');
+ put(x,.62);$('st').setAttribute('transform','rotate(0,0,-78)');
+ await tw(320,t=>{put(x,.62+.1*t);$('st').setAttribute('transform','rotate('+t*50+',0,-78)')});
+ await tw(250,t=>{hm.setAttribute('transform','translate('+x+','+(iy-150*t)+') rotate('+(-20*t)+')');put(x,.72+.28*t)});
+ hm.classList.add('hid');await tw(350,t=>put(x,1+Math.sin(t*12)*.05*(1-t)));put(x,1);
+ $('fd').classList.add('hid');$('st').classList.add('hid');$('fa').classList.remove('hid')}
+function shuffle(a){for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
+function show(){locked=false;const q=G[i];$('pg').textContent='Pregunta '+(i+1)+' de 10';$('qt').textContent=q.q;
+ $('fb').classList.add('hid');$('nx').classList.add('hid');$('ops').innerHTML='';
+ q.opts.forEach((t,k)=>{const b=document.createElement('button');b.className='opt';b.textContent=String.fromCharCode(65+k)+'.  '+t;b.onclick=()=>ans(k,b);$('ops').appendChild(b)})}
+async function ans(k,b){if(locked)return;locked=true;const q=G[i],bs=[...$('ops').children],ok=k===q.ok;bs.forEach(x=>x.disabled=true);
+ bs[q.ok].classList.add('ok');if(!ok)b.classList.add('no');
+ if(ok){sc++;$('sc').textContent=sc;tone(523,.15,'triangle',0);tone(659,.15,'triangle',.12);tone(784,.25,'triangle',.24);await walk()}
+ else{ha++;$('ha').textContent=ha;await hit()}
+ const f=$('fb');f.className='fb '+(ok?'ok':'no');f.innerHTML=(ok?'✔ ¡Correcto! ':'🔨 ¡Martillazo! ')+'<span>'+q.e+'</span>';
+ $('nx').textContent=i==9?'Ver resultado':'Siguiente';$('nx').classList.remove('hid')}
+function end(){$('game').classList.add('hid');$('end').classList.remove('hid');
+ const m=sc>=10?['🏆','¡Perfecto!','Ni un martillazo. Dominas el Tema I.']:sc>=8?['🎉','¡Muy bien!','Casi perfecto: repasa lo que te falló.']:sc>=5?['👍','Vas bien','Repasa cortante, planos inclinados y factor de seguridad.']:['🤕','¡Cuánto martillo!','Relee el Tema I y vuelve a intentarlo.'];
+ $('ei').textContent=m[0];$('et').textContent=m[1];$('ee').textContent=(($('nm').textContent)||'Participante')+': '+sc+' aciertos y '+ha+' martillazos. '+m[2];
+ if(sc>=10)tone(784,.2,'triangle',0),tone(988,.2,'triangle',.18),tone(1175,.4,'triangle',.36)}
+function init(){G=Q.map(q=>{const c=q.o[0],o=shuffle(q.o.slice());return{q:q.q,e:q.e,opts:o,ok:o.indexOf(c)}});i=0;sc=0;ha=0;step=0;$('sc').textContent=0;$('ha').textContent=0;put(X(0),1);show()}
+$('go').onclick=()=>{$('nm').textContent=$('inm').value.trim();$('start').classList.add('hid');$('game').classList.remove('hid');init()};
+$('inm').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
+$('nx').onclick=()=>{i++;i<10?show():end()};
+$('again').onclick=()=>{$('end').classList.add('hid');$('game').classList.remove('hid');init()};
+$('snd').onclick=e=>{mute=!mute;e.currentTarget.textContent=mute?'🔇':'🔊'};
+put(X(0),1);
+</script></body></html>

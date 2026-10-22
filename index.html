@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mecánica de Materiales - Tema I: Esfuerzos</title>
+    <style>
+        :root {
+            --primary-color: #0b2545;
+            --secondary-color: #134074;
+            --accent-color: #0077b6;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #d1d5db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Logo Vectorial UDO Integrado */
+        .udo-logo {
+            width: 85px;
+            height: 85px;
+            background: radial-gradient(circle, #38bdf8 0%, #0284c7 70%);
+            border: 3px solid #f97316;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .logo {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        header h2 {
+            margin: 5px 0 0;
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        /* Pestañas de navegación */
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            background-color: var(--secondary-color);
+            flex-wrap: wrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-btn {
+            background-color: transparent;
+            border: none;
+            color: white;
+            padding: 14px 18px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .tab-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .tab-btn.active {
+            background-color: var(--light-bg);
+            color: var(--primary-color);
+            border-bottom: 4px solid var(--accent-color);
+        }
+
+        /* Contenido de las pestañas */
+        .content-container {
+            max-width: 1050px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        ul.resource-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul.resource-list li {
+            margin: 12px 0;
+        }
+
+        ul.resource-list a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--light-bg);
+            color: var(--secondary-color);
+            padding: 10px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        ul.resource-list a:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        /* Estilos del Juego de Esfuerzos embebido */
+        .game-wrapper {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        #stage {
+            background: #dfe9f5;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .game-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .game-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #5d6779;
+            margin-bottom: 8px;
+        }
+
+        .q-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 0 0 12px;
+        }
+
+        .opt-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 11px 12px;
+            margin: 0 0 8px;
+            border: 1.5px solid var(--border-color);
+            background: #f8f9fa;
+            color: #1c2330;
+            border-radius: 10px;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .opt-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+        }
+
+        .opt-btn.ok {
+            border-color: #15803d;
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .opt-btn.no {
+            border-color: #b91c1c;
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .feedback-box {
+            margin: 6px 0 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .feedback-box.ok { background: #dcfce7; color: #15803d; }
+        .feedback-box.no { background: #fee2e2; color: #b91c1c; }
+
+        .btn-action {
+            padding: 10px 18px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent-color);
+            color: #fff;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .input-name {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font: inherit;
+            margin: 8px 0 12px;
+            box-sizing: border-box;
+        }
+
+        .hid { display: none !important; }
+
+        /* Contenedor para simuladores externos interactivos */
+        .sim-iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .sim-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sim-btn {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .sim-btn.active {
+            background: var(--accent-color);
+            color: #fff;
+            border-color: var(--accent-color);
+        }
+
+        footer {
+            text-align: right;
+            padding: 1.5rem 2rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <!-- Logo Vectorial de la UDO con diseño exacto -->
+            <div class="udo-logo" title="Universidad de Oriente">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Logo_UDO.svg?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=original" alt="Logo Universidad de Oriente" class="logo">
+            
+            </div>
+            <div>
+                <h1>Universidad de Oriente</h1>
+                <h2>Cátedra: Mecánica de Materiales — Tema I: Esfuerzos</h2>
+            </div>
+        </div>
+    </header>
+
+    <!-- Pestañas de Navegación -->
+    <nav class="tabs-container">
+        <button class="tab-btn active" onclick="openTab(event, 'juego')">🎮 Juego de Esfuerzo (Principal)</button>
+        <button class="tab-btn" onclick="openTab(event, 'simuladores')">🧪 Simuladores 3D</button>
+        <button class="tab-btn" onclick="openTab(event, 'guia')">📖 Guía de Clase</button>
+        <button class="tab-btn" onclick="openTab(event, 'videos')">🎥 Videos</button>
+        <button class="tab-btn" onclick="openTab(event, 'ejercicios')">✏️ Ejercicios</button>
+        <button class="tab-btn" onclick="openTab(event, 'libros')">📚 Libros</button>
+    </nav>
+
+    <main class="content-container">
+
+        <!-- PESTAÑA PRINCIPAL: JUEGO DE ESFUERZO -->
+        <section id="juego" class="tab-content active">
+            <h3>Juego de Esfuerzo: Acierta o Martillazo</h3>
+            <p style="margin-bottom: 20px;">Pon a prueba tus conocimientos del Tema I. ¡Si respondes correctamente tu muñeco avanza, de lo contrario recibirá un martillazo!</p>
+            
+            <div class="game-wrapper">
+                <div id="stage">
+                    <svg id="sv" viewBox="0 0 640 190" role="img">
+                        <rect x="0" y="150" width="640" height="40" fill="#cbd5e1"/>
+                        <g id="ticks"></g>
+                        <g transform="translate(602,150)"><rect x="-2" y="-70" width="4" height="70" fill="#64748b"/><path d="M2,-70 L34,-58 L2,-46Z" fill="#e11d48"/></g>
+                        <g id="pz">
+                            <text id="nm" x="0" y="-104" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b"></text>
+                            <g id="body">
+                                <rect x="-9" y="-28" width="7" height="28" rx="3" fill="#334155"/><rect x="2" y="-28" width="7" height="28" rx="3" fill="#334155"/>
+                                <rect x="-13" y="-58" width="26" height="32" rx="7" fill="#2563eb"/><rect x="-22" y="-56" width="9" height="6" rx="3" fill="#2563eb"/><rect x="13" y="-56" width="9" height="6" rx="3" fill="#2563eb"/>
+                                <circle cx="0" cy="-72" r="15" fill="#fcd5b0" stroke="#b9845a"/><path d="M-17,-76 A17 15 0 0 1 17,-76Z" fill="#facc15" stroke="#a16207"/><rect x="-19" y="-77" width="38" height="4" rx="2" fill="#facc15" stroke="#a16207"/>
+                                <g id="fa"><circle cx="-5" cy="-70" r="2" fill="#111"/><circle cx="5" cy="-70" r="2" fill="#111"/><path d="M-5,-64 Q0,-59 5,-64" stroke="#111" fill="none" stroke-width="1.6"/></g>
+                                <g id="fd" class="hid"><path d="M-8,-73 L-3,-67 M-3,-73 L-8,-67 M3,-73 L8,-67 M8,-73 L3,-67" stroke="#111" stroke-width="1.6"/><ellipse cx="0" cy="-61" rx="4" ry="2.5" fill="#7f1d1d"/></g>
+                            </g>
+                            <g id="st" class="hid"><text x="-28" y="-92" font-size="16">★</text><text x="14" y="-98" font-size="14">★</text><text x="-6" y="-106" font-size="12">✦</text></g>
+                        </g>
+                        <g id="hm" class="hid"><rect x="-4" y="-72" width="8" height="72" rx="3" fill="#a16207"/><rect x="-24" y="-26" width="48" height="26" rx="5" fill="#64748b" stroke="#334155" stroke-width="2"/><rect x="-24" y="-26" width="48" height="7" rx="3" fill="#94a3b8"/></g>
+                    </svg>
+                </div>
+
+                <div id="start" class="game-card">
+                    <h4 style="margin:0 0 4px;font-size:16px">Registrar Participante</h4>
+                    <p style="font-size:13px; color:#5d6779">Escribe un nombre para tu personaje:</p>
+                    <input id="inm" class="input-name" type="text" maxlength="14" placeholder="Tu nombre" autocomplete="off">
+                    <button class="btn-action" id="go">Comenzar Juego</button>
+                </div>
+
+                <div id="game" class="game-card hid">
+                    <div class="game-bar"><span id="pg"></span><span>✔ <b id="sc">0</b> · 🔨 <b id="ha">0</b> <button class="btn-action" style="padding:2px 8px; font-size:12px; margin-left:8px;" id="snd">🔊</button></span></div>
+                    <p class="q-title" id="qt"></p>
+                    <div id="ops"></div>
+                    <div id="fb" class="feedback-box hid"></div>
+                    <button class="btn-action hid" id="nx">Siguiente</button>
+                </div>
+
+                <div id="end" class="game-card hid" style="text-align:center">
+                    <p class="big" id="ei" style="font-size:38px; margin:0;"></p>
+                    <h3 id="et" style="margin:6px 0; border:none;"></h3>
+                    <p id="ee" style="font-size:13px; color:#5d6779;"></p>
+                    <button class="btn-action" id="again">Jugar otra vez</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA DE SIMULADORES -->
+        <section id="simuladores" class="tab-content">
+            <h3>Simuladores Interactivos 3D</h3>
+            <p>Selecciona el simulador que deseas ejecutar directamente desde los botones inferiores:</p>
+            
+            <div class="sim-selector">
+                <button class="sim-btn active" onclick="loadSim('Simuladores/sim_planoinclinado.html')">Plano Inclinado</button>
+                <button class="sim-btn" onclick="loadSim('Simuladores/sim_esfuerzonormal_axial.html')">Esfuerzo Axial</button>
+                <button class="sim-btn" onclick="loadSim('Simuladores/sim_cortantedoble.html')">Cortante Simple y Doble</button>
+                <button class="sim-btn" onclick="loadSim('Simuladores/sim_aplastamientocortante_simple.html')">Aplastamiento</button>
+                <button class="sim-btn" onclick="loadSim('Simuladores/sim_factorseguridad.html')">Factor de Seguridad (Ascensor)</button>
+            </div>
+
+            <iframe id="simFrame" src="Simulador 3D de esfuerzos sobre un plano inclinado.html" class="sim-iframe-container"></iframe>
+        </section>
+
+        <!-- Pestaña Guía -->
+        <section id="guia" class="tab-content">
+            <h3>Guía de Clase - Tema I: Esfuerzos</h3>
+            <ul class="resource-list">
+                <li><a href="https://drive.google.com/file/d/1hN43S4afWibj90eIo_iYlMYf7WDvnk-1/view?usp=drive_link" target="_blank">📄 Descargar Guía de Clase (Tema I - Esfuerzos)</a></li>
+            </ul>
+        </section>
+
+        <!-- Pestaña Videos -->
+        <section id="videos" class="tab-content">
+            <h3>Videos Explicativos de Clases</h3>
+            <ul class="resource-list">
+                <li><a href="https://drive.google.com/file/d/1aVaaBu-uTQYhwW7uDDAmeuBrepajfgGU/view?usp=drive_link" target="_blank">▶️ Clase 1: Introducción a los Esfuerzos</a></li>
+                <li><a href="https://drive.google.com/file/d/1p9MVWl-2g4CPA5y_Jg6N_8bA2UoZe-p0/view?usp=drive_link" target="_blank">▶️ Clase 2: Planos Inclinados y Factor de Seguridad</a></li>
+            </ul>
+        </section>
+
+        <!-- Pestaña Ejercicios -->
+        <section id="ejercicios" class="tab-content">
+            <h3>Ejercicios Resueltos</h3>
+            <ul class="resource-list">
+                <li><a href="https://drive.google.com/file/d/1PGI48AQ0ZTJSpL1rrIAOrJEvpW-gkjQs/view?usp=drive_link" target="_blank">📝 Ejercicio 1: Análisis de estructuras y varillas</a></li>
+                <li><a href="https://drive.google.com/file/d/1nsKsdm98LUb4kqjLRewRJjiJ1jBnAhB9/view?usp=drive_link" target="_blank">📝 Ejercicio 2: Cortante simple</a></li>
+                <li><a href="https://drive.google.com/file/d/1K106RCEgjDdObiDXT-qQ4fu5kcP7XmbX/view?usp=drive_link" target="_blank">📝 Ejercicio 3: Equilibrio estático</a></li>
+            </ul>
+        </section>
+
+        <!-- Pestaña Libros -->
+        <section id="libros" class="tab-content">
+            <h3>Bibliografía Recomendada</h3>
+            <ul class="resource-list">
+                <li><a href="https://drive.google.com/file/d/1MB2_WztUSxmFlvLgDPzjXFiMz6Bdwiy3/view?usp=drive_link" target="_blank">📚 Beer & Johnston - Mecánica de Materiales</a></li>
+                <li><a href="https://drive.google.com/file/d/1_b47-u5QAtzVrTlKt6HGkmMkpPUfINuC/view?usp=drive_link" target="_blank">📚 Fitzgerald - Mecánica de Materiales</a></li>
+                <li><a href="https://drive.google.com/file/d/1K-p8talOdyWBb5hJe0DdcNF0t6ydK4yM/view?usp=drive_link" target="_blank">📚 Gere - Mecánica de Materiales</a></li>
+                <li><a href="https://drive.google.com/file/d/1qXDVssvdWNZxezrl_UUikfsJTBvw48PZ/view?usp=drive_link" target="_blank">📚 Hibbeler - Mecánica de Materiales</a></li>
+                <li><a href="https://drive.google.com/file/d/1hRv-_WtCpCZZ4krC1i7XhJycqQzETecr/view?usp=drive_link" target="_blank">📚 Mott - Resistencia de Materiales</a></li>
+                <li><a href="https://drive.google.com/file/d/1BoztgGmeiSrZIFiiSvsl1Nmqw1E5r-b_/view?usp=drive_link" target="_blank">📚 Pytel - Resistencia de Materiales</a></li>
+            </ul>
+        </section>
+
+    </main>
+
+    <footer>
+        MSc. Rubén Vega
+    </footer>
+
+    <script>
+        function openTab(evt, tabName) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function loadSim(filename) {
+            document.getElementById('simFrame').src = filename;
+            document.querySelectorAll('.sim-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(filename.split(' ')[2]?.toLowerCase() || 'plano'));
+            });
+        }
+
+        // Lógica completa integrada del Juego del Esfuerzo
+        const $ = id => document.getElementById(id);
+        const Q = [
+            {q:"Una barra con sección transversal de 200 mm² soporta una fuerza axial P = 20 kN. ¿Cuál es el esfuerzo normal promedio?",o:["100 MPa","10 MPa","4 000 MPa","1 MPa"],e:"σ = P/A = 20 000 N / 200 mm² = 100 MPa (ecuación 2)."},
+            {q:"Según la convención del texto, el esfuerzo normal en un miembro sometido a compresión se escribe con signo:",o:["Negativo (−)","Positivo (+)","Cero","No lleva signo"],e:"Tensión (+) si la fuerza jala al elemento; compresión (−) si lo empuja."},
+            {q:"Un perno pasa de cortante simple a cortante doble, con la misma fuerza V y la misma área A. ¿Qué ocurre?",o:["Hay dos áreas de corte y τ se reduce a la mitad","Hay una sola área de corte y τ se duplica","Hay dos áreas de corte y τ se duplica","Hay tres áreas de corte y τ baja a la tercera parte"],e:"En cortante doble hay dos líneas de corte: τ = V/2A, la mitad de V/A."},
+            {q:"Un pasador en cortante doble soporta V = 24 kN y su área es A = 60 mm². ¿Cuánto vale el esfuerzo cortante promedio?",o:["200 MPa","400 MPa","100 MPa","800 MPa"],e:"τ = V/2A = 24 000 N / (2 · 60 mm²) = 200 MPa (ecuación 7)."},
+            {q:"Un perno de 10 mm de diámetro atraviesa una placa de 8 mm de espesor y transmite F = 16 kN. ¿Cuál es el esfuerzo de aplastamiento?",o:["200 MPa","100 MPa","400 MPa","20 MPa"],e:"σb = F/(t·d) = 16 000 N / (8 mm · 10 mm) = 200 MPa (ecuación 8). Se usa el área proyectada."},
+            {q:"Una barra de sección a × b se corta con un plano inclinado un ángulo α respecto al eje. ¿Cuánto vale el área del plano inclinado?",o:["A = a·b / sen α","A = a·b · sen α","A = a·b / cos α","A = a·b"],e:"c = a / sen α y A = c·b = a·b / sen α (Figura 13)."},
+            {q:"Al descomponer la fuerza F en el triángulo de fuerzas del plano inclinado, la componente normal al plano es:",o:["N = F sen α","N = F cos α","N = F tan α","N = F / sen α"],e:"sen α = N/F, entonces N = F sen α. La componente tangencial es V = F cos α."},
+            {q:"Si el plano de corte es la sección transversal (α = 90°), ¿cuánto valen τ y σ?",o:["τ = 0 y σ = F/(a·b)","τ = F/(a·b) y σ = 0","τ = F/(2a·b) y σ = F/(2a·b)","τ y σ son máximos al mismo tiempo"],e:"τ = F cos α sen α /(a·b) = 0 y σ = F sen²α /(a·b) = F/(a·b)."},
+            {q:"Un material tiene esfuerzo de falla de 250 MPa y el esfuerzo actuante es de 125 MPa. ¿Cuál es el factor de seguridad y qué ocurre?",o:["FS = 2: no falla","FS = 0,5: falla","FS = 125: no falla","FS = 375: falla"],e:"FS = esfuerzo de falla / esfuerzo actuante = 250/125 = 2. Con FS ≥ 1 no falla; con FS < 1 falla."},
+            {q:"Si el esfuerzo de falla es 24 ksi y se exige un FS = 1,5, ¿cuánto vale el esfuerzo permisible?",o:["16 ksi","36 ksi","24 ksi","1,5 ksi"],e:"σperm = σfalla / FS = 24 ksi / 1,5 = 16 ksi."}
+        ];
+        let G, i, sc, ha, step, locked = false, mute = false, AC;
+        const GY = 150, X = s => 50 + s * 52, sv = $('sv'), pz = $('pz'), hm = $('hm');
+        
+        for (let s = 0; s <= 10; s++) {
+            $('ticks').insertAdjacentHTML('beforeend', '<line x1="' + X(s) + '" y1="150" x2="' + X(s) + '" y2="158" stroke="#cbd5e1"/><text x="' + X(s) + '" y="174" font-size="10" text-anchor="middle" fill="#64748b">' + s + '</text>');
+        }
+        function put(x, sy, dy) { pz.setAttribute('transform', 'translate(' + x + ',' + (GY + (dy || 0)) + ') scale(1,' + (sy || 1) + ')'); }
+        function tw(ms, f) { return new Promise(r => { const t0 = performance.now(); (function k(n) { const t = Math.min(1, (n - t0) / ms); f(t); t < 1 ? requestAnimationFrame(k) : r(); })(t0); }); }
+        
+        function tone(f, d, ty, t0, v) {
+            if (mute) return;
+            try {
+                AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+                const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime + (t0 || 0);
+                o.type = ty || 'sine'; o.frequency.setValueAtTime(f, t);
+                g.gain.setValueAtTime(v || 0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+                o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d);
+            } catch (e) {}
+        }
+
+        async function walk() {
+            const a = X(step), b = X(step + 1); step++;
+            await tw(650, t => put(a + (b - a) * t, 1, -Math.abs(Math.sin(t * Math.PI * 2)) * 14));
+        }
+
+        async function hit() {
+            const x = X(step), iy = GY - 92; hm.classList.remove('hid');
+            await tw(420, t => hm.setAttribute('transform', 'translate(' + x + ',' + (iy - 130 * (1 - t * t)) + ') rotate(' + (38 * (1 - t)) + ')'));
+            tone(120, 0.25, 'square', 0, 0.25);
+            $('fa').classList.add('hid'); $('fd').classList.remove('hid'); $('st').classList.remove('hid');
+            sv.parentElement.classList.remove('shake'); void sv.offsetWidth; sv.parentElement.classList.add('shake');
+            put(x, 0.62); $('st').setAttribute('transform', 'rotate(0,0,-78)');
+            await tw(320, t => { put(x, 0.62 + 0.1 * t); $('st').setAttribute('transform', 'rotate(' + (t * 50) + ',0,-78)'); });
+            await tw(250, t => { hm.setAttribute('transform', 'translate(' + x + ',' + (iy - 150 * t) + ') rotate(' + (-20 * t) + ')'); put(x, 0.72 + 0.28 * t); });
+            hm.classList.add('hid'); await tw(350, t => put(x, 1 + Math.sin(t * 12) * 0.05 * (1 - t))); put(x, 1);
+            $('fd').classList.add('hid'); $('st').classList.add('hid'); $('fa').classList.remove('hid');
+        }
+
+        function shuffle(a) {
+            for (let k = a.length - 1; k > 0; k--) {
+                const j = Math.floor(Math.random() * (k + 1));
+                [a[k], a[j]] = [a[j], a[k]];
+            }
+            return a;
+        }
+
+        function showQ() {
+            locked = false; const q = G[i];
+            $('pg').textContent = 'Pregunta ' + (i + 1) + ' de 10';
+            $('qt').textContent = q.q;
+            $('fb').classList.add('hid'); $('nx').classList.add('hid'); $('ops').innerHTML = '';
+            q.opts.forEach((t, k) => {
+                const b = document.createElement('button');
+                b.className = 'opt-btn';
+                b.textContent = String.fromCharCode(65 + k) + '.  ' + t;
+                b.onclick = () => ans(k, b);
+                $('ops').appendChild(b);
+            });
+        }
+
+        async function ans(k, b) {
+            if (locked) return; locked = true;
+            const q = G[i], bs = [...$('ops').children], ok = k === q.ok;
+            bs.forEach(x => x.disabled = true);
+            bs[q.ok].classList.add('ok');
+            if (!ok) b.classList.add('no');
+            if (ok) { sc++; $('sc').textContent = sc; tone(523, 0.15, 'triangle'); await walk(); }
+            else { ha++; $('ha').textContent = ha; await hit(); }
+            const f = $('fb'); f.className = 'feedback-box ' + (ok ? 'ok' : 'no');
+            f.innerHTML = (ok ? '✔ ¡Correcto! ' : '🔨 ¡Martillazo! ') + '<span>' + q.e + '</span>';
+            f.classList.remove('hid');
+            $('nx').textContent = i == 9 ? 'Ver resultado' : 'Siguiente';
+            $('nx').classList.remove('hid');
+        }
+
+        function end() {
+            $('game').classList.add('hid'); $('end').classList.remove('hid');
+            const m = sc >= 10 ? ['🏆', '¡Perfecto!', 'Dominas completamente el Tema I.'] : sc >= 5 ? ['👍', '¡Muy bien!', 'Buen trabajo, repasa algunos conceptos.'] : ['🤕', '¡A repasar!', 'Relee la guía de clases y vuelve a intentarlo.'];
+            $('ei').textContent = m[0]; $('et').textContent = m[1];
+            $('ee').textContent = ($('nm').textContent || 'Participante') + ': ' + sc + ' aciertos y ' + ha + ' martillazos. ' + m[2];
+        }
+
+        function initGame() {
+            G = Q.map(q => { const c = q.o[0], o = shuffle(q.o.slice()); return { q: q.q, e: q.e, opts: o, ok: o.indexOf(c) }; });
+            i = 0; sc = 0; ha = 0; step = 0; $('sc').textContent = 0; $('ha').textContent = 0; put(X(0), 1); showQ();
+        }
+
+        $('go').onclick = () => {
+            $('nm').textContent = $('inm').value.trim() || 'Estudiante';
+            $('start').classList.add('hid'); $('game').classList.remove('hid');
+            initGame();
+        };
+
+        $('nx').onclick = () => { i++; i < 10 ? showQ() : end(); };
+        $('again').onclick = () => { $('end').classList.add('hid'); $('game').classList.remove('hid'); initGame(); };
+        $('snd').onclick = e => { mute = !mute; e.currentTarget.textContent = mute ? '🔇' : '🔊'; };
+        put(X(0), 1);
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de esfuerzo normal axial</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--mut:#5d6779;--bd:#d9dee6;--acc:#2563eb;--cv:#e9eef5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{font-size:19px;margin:0 0 2px}header{padding:14px 16px 6px}header p{margin:0;color:var(--mut);font-size:13px}
+.app{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:12px;padding:10px 16px 20px;max-width:1200px;margin:auto}
+@media(max-width:820px){.app{grid-template-columns:1fr}}
+#vp{position:relative;height:min(62vh,520px);min-height:340px;background:var(--cv);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.lb{position:absolute;font-size:12px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--card);border:1px solid var(--bd);pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}
+.hint{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.card h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.seg{display:flex;gap:6px;margin-bottom:8px}.seg button,.tg{flex:1;padding:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:8px;font:inherit;cursor:pointer}
+.seg button.on,.tg.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.tgs{display:flex;gap:6px;margin-top:8px}.row{margin:8px 0}.row label{display:flex;justify-content:space-between;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.res{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px}.res b{text-align:right;font-variant-numeric:tabular-nums}
+.big{font-size:26px;font-weight:700;margin:2px 0}
+.bar{height:14px;background:var(--bg);border:1px solid var(--bd);border-radius:7px;position:relative;overflow:hidden;margin:3px 0 8px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .15s}
+.bar u{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);opacity:.6}
+.chk{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--bd)}
+small{color:var(--mut)}
+</style></head><body>
+<header><h1>Esfuerzo normal axial: tracción y compresión</h1>
+<p>Arrastra para rotar, rueda o pellizco para acercar. Corta la barra y observa el esfuerzo perpendicular a la sección.</p></header>
+<div class="app">
+<div><div id="vp"><canvas id="c"></canvas><div class="hint">Deformación exagerada para visualizar el alargamiento</div></div></div>
+<div>
+<div class="card">
+<div class="seg"><button id="tn" class="on">Tracción</button><button id="cm">Compresión</button></div>
+<div class="seg"><button id="sc" class="on">Sección circular</button><button id="sq">Sección cuadrada</button></div>
+<div class="seg"><button class="mt on" data-m="0">Acero</button><button class="mt" data-m="1">Aluminio</button><button class="mt" data-m="2">Cobre</button></div>
+<div class="row"><label><span>Fuerza axial P</span><b id="vP"></b></label><input id="P" type="range" min="1" max="200" value="60"></div>
+<div class="row"><label><span id="ld">Diámetro d</span><b id="vd"></b></label><input id="d" type="range" min="10" max="60" value="30"></div>
+<div class="row"><label><span>Longitud L</span><b id="vL"></b></label><input id="L" type="range" min="200" max="3000" step="50" value="1000"></div>
+<div class="row"><label><span>Posición del corte</span><b id="vx"></b></label><input id="x" type="range" min="15" max="85" value="50"></div>
+<div class="tgs"><button class="tg" id="cut">✂ Cortar la barra</button><button class="tg" id="fr">Vista frontal</button></div></div>
+<div class="card"><h2>Resultados</h2>
+<div class="big" id="sg"></div>
+<div class="res"><span>Fuerza interna N = P</span><b id="N"></b><span>Área de la sección A</span><b id="A"></b><span>Deformación unitaria ε = σ/E</span><b id="eps"></b><span>Alargamiento δ = σL/E</span><b id="del"></b><span>Módulo E / admisible</span><b id="mat"></b><span>Factor de seguridad</span><b id="fs"></b></div></div>
+<div class="card"><h2>Efecto del área (mismo P)</h2>
+<small id="l1"></small><div class="bar"><i id="b1"></i><u id="u1"></u></div>
+<small id="l2"></small><div class="bar"><i id="b2"></i><u id="u2"></u></div>
+<small id="l3"></small><div class="bar"><i id="b3"></i><u id="u3"></u></div></div>
+<div class="card"><h2>Comprobación geométrica</h2><div class="chk" id="chk"></div></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),MT=[['Acero',200,150],['Aluminio',70,90],['Cobre',110,70]],SC=300,K=250;
+let tens=true,circ=true,cut=false,mi=0,labels=[];
+const vp=$('vp'),cv=$('c');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,200);
+scene.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.7);dl.position.set(6,12,8);scene.add(dl);
+const root=new THREE.Group();scene.add(root);
+let th=.7,ph=1.15,dist=26;
+function setCam(){cam.position.set(dist*Math.sin(ph)*Math.sin(th),dist*Math.cos(ph),dist*Math.sin(ph)*Math.cos(th));cam.lookAt(0,0,0)}
+function resize(){const w=vp.clientWidth,h=vp.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(vp);
+const ptr=new Map();let pd=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,e);pd=0});
+cv.addEventListener('pointerup',e=>ptr.delete(e.pointerId));
+cv.addEventListener('pointermove',e=>{const p=ptr.get(e.pointerId);if(!p)return;
+ if(ptr.size==2){const [a,b]=[...ptr.values()];const nd=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(pd)dist=Math.min(50,Math.max(10,dist*pd/nd));pd=nd}
+ else{th-=(e.clientX-p.clientX)*.008;ph=Math.min(2.9,Math.max(.05,ph-(e.clientY-p.clientY)*.008))}
+ ptr.set(e.pointerId,e);setCam()});
+cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(50,Math.max(10,dist*(1+e.deltaY*.001)));setCam()},{passive:false});
+
+function lab(txt,v){const el=document.createElement('div');el.className='lb';el.textContent=txt;vp.appendChild(el);labels.push({el,v})}
+function arrow(o,dir,len,col,hl,hw){root.add(new THREE.ArrowHelper(dir.clone().normalize(),o,len,col,hl||Math.min(.45,len*.45),hw||.25))}
+function V(x,y,z){return new THREE.Vector3(x,y,z)}
+
+function build(){
+ labels.forEach(l=>l.el.remove());labels=[];
+ while(root.children.length)root.remove(root.children[0]);
+ const [mn,E,ADM]=MT[mi],P=+$('P').value,dm=+$('d').value,Lmm=+$('L').value,fr=+$('x').value/100;
+ const h=dm/20,A=circ?Math.PI*dm*dm/4:dm*dm,sg=P*1000/A,ratio=sg/ADM,sgn=tens?1:-1;
+ const eps=sg/(E*1000),del=eps*Lmm,col=new THREE.Color().setHSL(.33*(1-Math.min(ratio,1)),.8,.5);
+ const s=sgn*10*Math.min(eps*K,.35),gap=cut?1.6:0,half=5+s/2,xc=-half+fr*(10+s);
+ // segmentos de barra
+ const bm=new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:.82,metalness:.3,roughness:.5});
+ function seg(x0,x1){const len=x1-x0;let g=circ?new THREE.CylinderGeometry(h,h,len,48):new THREE.BoxGeometry(len,2*h,2*h);
+  if(circ)g.rotateZ(Math.PI/2);const m=new THREE.Mesh(g,bm);m.position.x=(x0+x1)/2;root.add(m);
+  const l=new THREE.LineSegments(new THREE.EdgesGeometry(g,30),new THREE.LineBasicMaterial({color:0x33445a}));l.position.x=m.position.x;root.add(l)}
+ seg(-half-gap/2,xc-gap/2);seg(xc+gap/2,half+gap/2);
+ // fuerzas externas P
+ const Lf=.8+P/200*4.5,eL=-half-gap/2,eR=half+gap/2;
+ if(tens){arrow(V(eR,0,0),V(1,0,0),Lf,0xe5382f,.7,.4);arrow(V(eL,0,0),V(-1,0,0),Lf,0xe5382f,.7,.4);lab('P',V(eR+Lf+.8,.8,0));lab('P',V(eL-Lf-.8,.8,0))}
+ else{arrow(V(eR+Lf,0,0),V(-1,0,0),Lf,0xe5382f,.7,.4);arrow(V(eL-Lf,0,0),V(1,0,0),Lf,0xe5382f,.7,.4);lab('P',V(eR+Lf+.8,.8,0));lab('P',V(eL-Lf-.8,.8,0))}
+ // plano de sección + esfuerzos
+ const sm=new THREE.MeshBasicMaterial({color:0xffd21f,transparent:true,opacity:cut?.55:.28,side:THREE.DoubleSide});
+ function face(x){const g=circ?new THREE.CircleGeometry(h,48):new THREE.PlaneGeometry(2*h,2*h);g.rotateY(Math.PI/2);
+  const m=new THREE.Mesh(g,sm);m.position.x=x;root.add(m);
+  const l=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0xffd21f}));l.position.x=x;root.add(l)}
+ const Ls=.5+Math.min(ratio,1.5)*1;
+ function stress(x,outDir){ // outDir: +1 si la flecha apunta hacia +x
+  [-.7,-.35,0,.35,.7].forEach(a=>[-.7,-.35,0,.35,.7].forEach(b=>{if(circ&&Math.hypot(a,b)>.85)return;
+   const o=tens?V(x,a*h,b*h):V(x-outDir*Ls,a*h,b*h);arrow(o,V(outDir,0,0),Ls,0xffd21f,.3,.15)}))}
+ if(cut){face(xc-gap/2);face(xc+gap/2);
+  // cara derecha de pieza izquierda: tracción -> +x ; compresión -> -x (hacia el cuerpo)
+  stress(xc-gap/2,sgn);stress(xc+gap/2,-sgn);
+  lab('N = P',V(xc-gap/2-1.2,h+.9,0));lab('N = P',V(xc+gap/2+1.2,h+.9,0))}
+ else{face(xc);lab('sección',V(xc,h+.9,0))}
+ // normal n de la sección
+ const nx=xc+(cut?gap/2:0);
+ arrow(V(nx,h+1.4,0),V(1,0,0),2,0x16a34a,.5,.3);lab('n',V(nx+2.6,h+1.4,0));
+ lab('σ = '+sg.toFixed(1)+' MPa',V(xc,-h-1.4,0));
+ // UI
+ $('ld').textContent=circ?'Diámetro d':'Lado a';
+ $('vP').textContent=P+' kN';$('vd').textContent=dm+' mm';$('vL').textContent=(Lmm/1000).toFixed(2)+' m';$('vx').textContent=Math.round(fr*100)+' %';
+ $('sg').textContent='σ = '+(tens?'+':'−')+sg.toFixed(1)+' MPa ('+(tens?'tracción':'compresión')+')';$('sg').style.color=ratio>1?'#e5382f':'';
+ $('N').textContent=(tens?'+':'−')+P+' kN';$('A').textContent=A.toFixed(0)+' mm²';
+ $('eps').textContent=(sgn*eps).toExponential(2);$('del').textContent=(sgn*del).toFixed(3)+' mm';
+ $('mat').textContent=mn+': '+E+' GPa / '+ADM+' MPa';
+ $('fs').textContent=(1/ratio).toFixed(2)+(ratio>1?' ✗ falla':' ✓');
+ [[1,.5,'A/2'],[2,1,'A'],[3,2,'2A']].forEach(([k,f,n])=>{const v=P*1000/(A*f);const b=$('b'+k);b.style.width=Math.min(100,v/SC*100)+'%';b.style.background=v>ADM?'#e5382f':'#2e9e5b';$('u'+k).style.left=ADM/SC*100+'%';
+  $('l'+k).textContent='Área '+n+': σ = '+v.toFixed(1)+' MPa'});
+ $('chk').innerHTML='Normal de la sección <b>n</b> = (1, 0, 0) · fuerza interna <b>N</b> = (±1, 0, 0)<br><b>N × n = 0</b> → N es <b>perpendicular al plano</b> (paralela a n).<br>Por eso el esfuerzo es <b>normal</b> σ = N/A. En el cortante, en cambio, F ⟂ n.<br><small>La línea negra de las barras marca el esfuerzo admisible.</small>';
+}
+function tick(){requestAnimationFrame(tick);renderer.render(scene,cam);
+ const w=vp.clientWidth,h=vp.clientHeight;
+ labels.forEach(l=>{const v=l.v.clone().project(cam);l.el.style.left=(v.x*.5+.5)*w+'px';l.el.style.top=(-v.y*.5+.5)*h+'px'})}
+['P','d','L','x'].forEach(i=>$(i).addEventListener('input',build));
+function pair(a,b,fn){$(a).onclick=()=>{fn(true);$(a).classList.add('on');$(b).classList.remove('on');build()};$(b).onclick=()=>{fn(false);$(b).classList.add('on');$(a).classList.remove('on');build()}}
+pair('tn','cm',v=>tens=v);pair('sc','sq',v=>circ=v);
+document.querySelectorAll('.mt').forEach(b=>b.onclick=()=>{mi=+b.dataset.m;document.querySelectorAll('.mt').forEach(x=>x.classList.toggle('on',x===b));build()});
+$('cut').onclick=e=>{cut=!cut;e.currentTarget.classList.toggle('on',cut);build()};
+$('fr').onclick=e=>{const on=e.currentTarget.classList.toggle('on');if(on){th=Math.PI/2+.001;ph=Math.PI/2}else{th=.7;ph=1.15}setCam()};
+resize();setCam();build();tick();
+</script></body></html>

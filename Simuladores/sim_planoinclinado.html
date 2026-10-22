@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de esfuerzos sobre un plano inclinado</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--mut:#5d6779;--bd:#d9dee6;--acc:#2563eb;--cv:#e9eef5;--g:#15803d;--y:#b45309;--r:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;--g:#4ade80;--y:#fbbf24;--r:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;--g:#4ade80;--y:#fbbf24;--r:#f87171;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{font-size:19px;margin:0 0 2px}header{padding:14px 16px 6px}header p{margin:0;color:var(--mut);font-size:13px}
+.app{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:12px;padding:10px 16px 20px;max-width:1240px;margin:auto}
+@media(max-width:840px){.app{grid-template-columns:1fr}}
+#vp{position:relative;height:min(72vh,600px);min-height:360px;background:var(--cv);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.lb{position:absolute;font-size:12px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--card);border:1px solid var(--bd);pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}
+.hint{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.card h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.tgs{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.tg{flex:1;min-width:90px;padding:7px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:8px;font:inherit;font-size:13px;cursor:pointer}
+.tg.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.row{margin:8px 0}.row label{display:flex;justify-content:space-between;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.res{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px}.res b{text-align:right;font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.big{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;background:var(--bg)}.big div{font-size:12px;color:var(--mut)}.big b{font-size:22px;font-variant-numeric:tabular-nums}
+svg{width:100%;height:auto;display:block}svg text{fill:var(--fg);font:11px system-ui,sans-serif}
+.chk{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--bd)}
+small{color:var(--mut)}
+</style></head><body>
+<header><h1>Esfuerzos sobre un plano inclinado</h1>
+<p>Barra rectangular a × b con fuerza axial. Gira el plano de corte (α medido desde el eje) y descompón F en N y V. Arrastra para rotar.</p></header>
+<div class="app">
+<div><div id="vp"><canvas id="c"></canvas><div class="hint" id="note"></div></div></div>
+<div>
+<div class="card">
+<div class="row"><label><span>Ángulo del plano α (desde el eje)</span><b id="vA"></b></label><input id="al" type="range" min="0" max="90" step="1" value="40"></div>
+<div class="row"><label><span>Fuerza axial F = P</span><b id="vF"></b></label><input id="F" type="range" min="1" max="200" value="60"></div>
+<div class="row"><label><span>Sección: altura a</span><b id="va"></b></label><input id="a" type="range" min="10" max="60" value="30"></div>
+<div class="row"><label><span>Sección: ancho b</span><b id="vb"></b></label><input id="b" type="range" min="10" max="60" value="20"></div>
+<div class="row"><label><span>Longitud L (no afecta σ ni τ)</span><b id="vL"></b></label><input id="L" type="range" min="200" max="2000" step="50" value="800"></div>
+<div class="tgs"><button class="tg on" id="cut">✂ Cuerpo libre</button><button class="tg on" id="dec">F → N y V</button><button class="tg" id="st">Esfuerzos σ, τ</button></div></div>
+<div class="card"><div class="two"><div class="big"><div>Esfuerzo normal σ</div><b id="sg" style="color:var(--g)"></b></div><div class="big"><div>Esfuerzo cortante τ</div><b id="ta" style="color:var(--y)"></b></div></div>
+<div class="res"><span>Área de la sección A = a·b</span><b id="A0"></b><span>Área inclinada A_θ = a·b / senα</span><b id="Ath"></b><span>Normal N = F·senα</span><b id="N"></b><span>Cortante V = F·cosα</span><b id="V"></b><span>σ = N/A_θ = F·sen²α / (a·b)</span><b id="s1"></b><span>τ = V/A_θ = F·senα·cosα / (a·b)</span><b id="t1"></b><span>Verificación N² + V² = F²</span><b id="ck"></b></div></div>
+<div class="card"><h2>Triángulo de fuerzas</h2><div id="tri"></div></div>
+<div class="card"><h2>σ y τ según α (relativos a σ₀ = F/ab)</h2><div id="gr"></div></div>
+<div class="card"><h2>Qué observar</h2><div class="chk" id="obs"></div></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let cut=true,dec=true,st=false,labels=[];
+const vp=$('vp'),cv=$('c');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,300);
+scene.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.7);dl.position.set(6,12,10);scene.add(dl);
+const root=new THREE.Group();scene.add(root);
+let th=.45,ph=1.2,dist=34;
+function setCam(){cam.position.set(dist*Math.sin(ph)*Math.sin(th),dist*Math.cos(ph),dist*Math.sin(ph)*Math.cos(th));cam.lookAt(0,0,0)}
+function resize(){const w=vp.clientWidth,h=vp.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(vp);
+const ptr=new Map();let pd=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,e);pd=0});
+cv.addEventListener('pointerup',e=>ptr.delete(e.pointerId));
+cv.addEventListener('pointermove',e=>{const p=ptr.get(e.pointerId);if(!p)return;
+ if(ptr.size==2){const [a,b]=[...ptr.values()];const nd=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(pd)dist=Math.min(60,Math.max(12,dist*pd/nd));pd=nd}
+ else{th-=(e.clientX-p.clientX)*.008;ph=Math.min(2.9,Math.max(.1,ph-(e.clientY-p.clientY)*.008))}
+ ptr.set(e.pointerId,e);setCam()});
+cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(60,Math.max(12,dist*(1+e.deltaY*.001)));setCam()},{passive:false});
+function V3(x,y,z){return new THREE.Vector3(x,y,z)}
+function lab(txt,x,y,z){const el=document.createElement('div');el.className='lb';el.textContent=txt;vp.appendChild(el);labels.push({el,v:V3(x,y,z)})}
+function arrow(o,d,len,col,hl,hw){if(len<.05)return;root.add(new THREE.ArrowHelper(d.clone().normalize(),o,len,col,Math.min(hl||.55,len*.5),hw||.3))}
+function prism(pts,w,op){const sh=new THREE.Shape();pts.forEach((p,i)=>i?sh.lineTo(p[0],p[1]):sh.moveTo(p[0],p[1]));sh.closePath();
+ const g=new THREE.ExtrudeGeometry(sh,{depth:w,bevelEnabled:false});g.translate(0,0,-w/2);
+ root.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x6c8cb0,transparent:true,opacity:op,metalness:.2,roughness:.6,side:THREE.DoubleSide})));
+ root.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x44566e})))}
+
+function build(){
+ labels.forEach(l=>l.el.remove());labels=[];
+ while(root.children.length)root.remove(root.children[0]);
+ const F=+$('F').value,a=+$('a').value,b=+$('b').value,al=+$('al').value,L=+$('L').value;
+ const ar=al*Math.PI/180,sN=Math.sin(ar),cN=Math.cos(ar);
+ const A0=a*b,s0=F*1000/A0,Nf=F*sN,Vf=F*cN,Ath=sN>1e-9?A0/sN:Infinity,sg=s0*sN*sN,ta=s0*sN*cN;
+ const au=a/15,bu=b/15,Lv=20+L/200,h=au/2,amin=Math.atan(au/(.9*Lv)),av=Math.max(ar,amin),xt=h/Math.tan(av);
+ const cs=Math.cos(av),sn=Math.sin(av),t=V3(cs,sn,0),n=V3(sn,-cs,0);
+ // barra
+ prism([[-Lv/2,-h],[-xt,-h],[xt,h],[-Lv/2,h]],bu,cut?.85:.6);
+ prism([[-xt,-h],[Lv/2,-h],[Lv/2,h],[xt,h]],bu,cut?.07:.6);
+ // plano inclinado (área A_theta)
+ const lt=au/sn,pg=new THREE.PlaneGeometry(lt,bu);pg.rotateX(Math.PI/2);pg.rotateZ(av);
+ root.add(new THREE.Mesh(pg,new THREE.MeshBasicMaterial({color:0xff9a1f,transparent:true,opacity:.42,side:THREE.DoubleSide})));
+ root.add(new THREE.LineSegments(new THREE.EdgesGeometry(pg),new THREE.LineBasicMaterial({color:0xff9a1f})));
+ // arco de α en la cara frontal
+ const ap=[];for(let i=0;i<=24;i++){const q=av*i/24;ap.push(V3(1.7*Math.cos(q),1.7*Math.sin(q),bu/2+.03))}
+ root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ap),new THREE.LineBasicMaterial({color:0xe5382f})));
+ root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(0,0,bu/2+.03),V3(2.8,0,bu/2+.03)]),new THREE.LineBasicMaterial({color:0x8a94a3})));
+ lab('α',2.2*Math.cos(av/2),2.2*Math.sin(av/2),bu/2+.1);
+ lab('A_θ = a·b/senα',-xt*.6-1,h+.9,bu/2);
+ // fuerzas
+ const Lf=Math.max(3,.8+F/200*7);
+ arrow(V3(-Lv/2,0,0),V3(-1,0,0),Lf,0xe5382f,.8,.45);lab('P',-Lv/2-Lf-.8,.8,0);
+ if(!cut){arrow(V3(Lv/2,0,0),V3(1,0,0),Lf,0xe5382f,.8,.45);lab('P',Lv/2+Lf+.8,.8,0)}
+ else{
+  arrow(V3(0,0,0),V3(1,0,0),Lf,0xe5382f,.8,.45);lab('F = P',Lf+.9,.8,0);
+  if(dec){const vl=Lf*cN,nl=Lf*sN,vt=t.clone().multiplyScalar(vl);
+   arrow(V3(0,0,0),t,vl,0xd97706,.6,.35);arrow(vt,n,nl,0x16a34a,.6,.35);
+   lab('V = F·cosα',vt.x*.5-.2,vt.y*.5+.9,0);lab('N = F·senα',vt.x+n.x*nl*.5+1.4,vt.y+n.y*nl*.5-.7,0)}
+  if(st&&sn>.02){const sc=2.4/s0;[-.7,0,.7].forEach(u=>[-.7,0,.7].forEach(z=>{const o=t.clone().multiplyScalar(u*lt/2);o.z=z*bu/2;
+   arrow(o,n,sg*sc,0x16a34a,.35,.2);arrow(o,t,ta*sc,0xd97706,.35,.2)}));
+   lab('σ',n.x*1.6+t.x*lt*.35,n.y*1.6+t.y*lt*.35,bu/2+.3);lab('τ',t.x*(lt*.35+1.4),t.y*(lt*.35+1.4)+.6,bu/2+.3)}
+ }
+ // UI
+ const f=(x,d)=>x.toFixed(d===undefined?1:d);
+ $('vA').textContent=al+'°';$('vF').textContent=F+' kN';$('va').textContent=a+' mm';$('vb').textContent=b+' mm';$('vL').textContent=L+' mm';
+ $('sg').textContent=f(sg)+' MPa';$('ta').textContent=f(ta)+' MPa';
+ $('A0').textContent=A0+' mm²';$('Ath').textContent=isFinite(Ath)?f(Ath,0)+' mm²':'∞';
+ $('N').textContent=f(Nf)+' kN';$('V').textContent=f(Vf)+' kN';$('s1').textContent=f(sg)+' MPa';$('t1').textContent=f(ta)+' MPa';
+ $('ck').textContent=f(Math.hypot(Nf,Vf))+' = '+F+' ✓';
+ $('note').textContent=ar<amin-1e-6?'Para α muy pequeño el plano se dibuja recortado; los valores son los exactos.':'';
+ // triángulo
+ const B=108,ox=20,W=200,vx=ox+W*cN*cN,vy=B-W*cN*sN;
+ $('tri').innerHTML='<svg viewBox="0 0 250 125"><polygon points="'+ox+','+B+' '+vx+','+vy+' '+(ox+W)+','+B+'" fill="none" stroke="var(--mut)" stroke-width="1"/>'+
+  '<line x1="'+ox+'" y1="'+B+'" x2="'+(ox+W)+'" y2="'+B+'" stroke="var(--r)" stroke-width="3"/>'+
+  '<line x1="'+ox+'" y1="'+B+'" x2="'+vx+'" y2="'+vy+'" stroke="var(--y)" stroke-width="3"/>'+
+  '<line x1="'+vx+'" y1="'+vy+'" x2="'+(ox+W)+'" y2="'+B+'" stroke="var(--g)" stroke-width="3"/>'+
+  '<path d="M'+(ox+26)+','+B+' A26 26 0 0 0 '+(ox+26*cN)+','+(B-26*sN)+'" fill="none" stroke="var(--r)"/>'+
+  '<text x="'+(ox+30)+'" y="'+(B-6)+'">α</text>'+
+  '<text x="'+(ox+W/2-30)+'" y="'+(B+13)+'" style="fill:var(--r)">F = '+F+' kN</text>'+
+  '<text x="'+(ox+W*cN*cN/2-52)+'" y="'+(B-W*cN*sN/2-3)+'" style="fill:var(--y)">V = '+f(Vf)+'</text>'+
+  '<text x="'+((vx+ox+W)/2+6)+'" y="'+((vy+B)/2-2)+'" style="fill:var(--g)">N = '+f(Nf)+'</text></svg>';
+ // gráfica
+ let ps='',pt='';for(let i=0;i<=45;i++){const q=i*2,r=q*Math.PI/180,x=34+q/90*206;ps+=x+','+(112-Math.pow(Math.sin(r),2)*100)+' ';pt+=x+','+(112-Math.sin(2*r)/2*100)+' '}
+ const mx=34+al/90*206;
+ $('gr').innerHTML='<svg viewBox="0 0 260 140"><line x1="34" y1="112" x2="240" y2="112" stroke="var(--mut)"/><line x1="34" y1="12" x2="34" y2="112" stroke="var(--mut)"/>'+
+  '<polyline points="'+ps+'" fill="none" stroke="var(--g)" stroke-width="2"/><polyline points="'+pt+'" fill="none" stroke="var(--y)" stroke-width="2"/>'+
+  '<line x1="'+mx+'" y1="12" x2="'+mx+'" y2="112" stroke="var(--mut)" stroke-dasharray="3 3"/>'+
+  '<circle cx="'+mx+'" cy="'+(112-sN*sN*100)+'" r="4" fill="var(--g)"/><circle cx="'+mx+'" cy="'+(112-Math.sin(2*ar)/2*100)+'" r="4" fill="var(--y)"/>'+
+  '<text x="26" y="16" text-anchor="end">1</text><text x="26" y="64" text-anchor="end">.5</text><text x="26" y="115" text-anchor="end">0</text>'+
+  '<text x="34" y="127" text-anchor="middle">0°</text><text x="137" y="127" text-anchor="middle">45°</text><text x="240" y="127" text-anchor="middle">90°</text>'+
+  '<text x="170" y="22" style="fill:var(--g)">σ/σ₀ = sen²α</text><text x="120" y="70" style="fill:var(--y)">τ/σ₀ = ½ sen2α</text></svg>';
+ $('obs').innerHTML='σ₀ = F/(a·b) = <b>'+f(s0)+' MPa</b> (esfuerzo normal en la sección transversal, α = 90°).<br>'+
+  'σ/σ₀ = <b>'+f(sN*sN,3)+'</b> · τ/σ₀ = <b>'+f(sN*cN,3)+'</b><br>'+
+  (Math.abs(al-45)<1?'<b>α ≈ 45°:</b> el cortante alcanza su máximo, τ = σ₀/2 (y σ = σ₀/2).':al>=89?'<b>α = 90°:</b> la fuerza es perpendicular al plano, V = 0 y σ = σ₀.':al<=1?'<b>α = 0°:</b> el plano es paralelo a la fuerza: N = 0, V = 0 y no hay esfuerzo sobre él.':'Al crecer α, el área inclinada A_θ disminuye y N crece; V decrece. Busca el α donde τ es máximo.');
+}
+function tick(){requestAnimationFrame(tick);renderer.render(scene,cam);
+ const w=vp.clientWidth,h=vp.clientHeight;
+ labels.forEach(l=>{const v=l.v.clone().project(cam);l.el.style.left=(v.x*.5+.5)*w+'px';l.el.style.top=(-v.y*.5+.5)*h+'px'})}
+['al','F','a','b','L'].forEach(i=>$(i).addEventListener('input',build));
+[['cut',v=>cut=v],['dec',v=>dec=v],['st',v=>st=v]].forEach(([id,fn])=>$(id).onclick=e=>{const on=e.currentTarget.classList.toggle('on');fn(on);build()});
+resize();setCam();build();tick();
+</script></body></html>

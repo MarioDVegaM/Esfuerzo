@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de esfuerzo de aplastamiento (cortante simple)</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--mut:#5d6779;--bd:#d9dee6;--acc:#2563eb;--cv:#e9eef5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151b;--fg:#e8ecf3;--card:#1b2029;--mut:#9aa4b6;--bd:#2d3542;--acc:#6ea0ff;--cv:#0e1117;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{font-size:19px;margin:0 0 2px}header{padding:14px 16px 6px}header p{margin:0;color:var(--mut);font-size:13px}
+.app{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:12px;padding:10px 16px 20px;max-width:1200px;margin:auto}
+@media(max-width:820px){.app{grid-template-columns:1fr}}
+#vp{position:relative;height:min(62vh,520px);min-height:340px;background:var(--cv);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.lb{position:absolute;font-size:12px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--card);border:1px solid var(--bd);pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}
+.hint{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.card h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.seg{display:flex;gap:6px;margin-bottom:8px}.seg button,.tg{flex:1;padding:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:8px;font:inherit;cursor:pointer}
+.seg button.on,.tg.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.tgs{display:flex;gap:6px;margin-top:8px}.row{margin:8px 0}.row label{display:flex;justify-content:space-between;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.res{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px}.res b{text-align:right;font-variant-numeric:tabular-nums}
+.big{font-size:26px;font-weight:700;margin:2px 0}
+.bar{height:14px;background:var(--bg);border:1px solid var(--bd);border-radius:7px;position:relative;overflow:hidden;margin:3px 0 8px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .15s}
+.bar u{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);opacity:.6}
+.chk{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--bd)}
+small{color:var(--mut)}
+</style></head><body>
+<header><h1>Esfuerzo de aplastamiento en un perno (cortante simple)</h1>
+<p>Arrastra para rotar, rueda o pellizco para acercar. Observa cómo el perno presiona la pared del agujero de cada placa.</p></header>
+<div class="app">
+<div><div id="vp"><canvas id="c"></canvas><div class="hint">Las placas son transparentes para ver el contacto</div></div></div>
+<div>
+<div class="card">
+<div class="seg"><button id="d1" class="on">Presión real (cos θ)</button><button id="d2">Promedio uniforme</button></div>
+<div class="row"><label><span>Fuerza F</span><b id="vF"></b></label><input id="F" type="range" min="1" max="200" value="50"></div>
+<div class="row"><label><span>Diámetro del perno d</span><b id="vd"></b></label><input id="d" type="range" min="8" max="40" value="20"></div>
+<div class="row"><label><span>Espesor placa superior t₁</span><b id="vt1"></b></label><input id="t1" type="range" min="5" max="25" value="12"></div>
+<div class="row"><label><span>Espesor placa inferior t₂</span><b id="vt2"></b></label><input id="t2" type="range" min="5" max="25" value="20"></div>
+<div class="tgs"><button class="tg on" id="ap">Área proyectada d·t</button><button class="tg" id="top">Vista en planta</button></div></div>
+<div class="card"><h2>Resultados</h2>
+<div class="big" id="sg"></div>
+<div class="res"><span>Placa 1: A_b1 = d·t₁</span><b id="A1"></b><span>Placa 1: σ_b1 = F/(d·t₁)</span><b id="s1"></b>
+<span>Placa 2: A_b2 = d·t₂</span><b id="A2"></b><span>Placa 2: σ_b2 = F/(d·t₂)</span><b id="s2"></b>
+<span>Pico real en el contacto (4/π·σ_b)</span><b id="sp"></b><span>Admisible (referencia)</span><b>200 MPa</b><span>Factor de seguridad</span><b id="fs"></b></div></div>
+<div class="card"><h2>Comparación entre placas</h2>
+<small id="l1"></small><div class="bar"><i id="b1"></i><u id="u1"></u></div>
+<small id="l2"></small><div class="bar"><i id="b2"></i><u id="u2"></u></div></div>
+<div class="card"><h2>Idea clave</h2><div class="chk" id="chk"></div></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),ADM=200,SC=500;
+let uni=false,showAp=true,labels=[];
+const vp=$('vp'),cv=$('c');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,200);
+scene.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.7);dl.position.set(6,12,8);scene.add(dl);
+const root=new THREE.Group();scene.add(root);
+let th=.7,ph=1.1,dist=22;
+function setCam(){cam.position.set(dist*Math.sin(ph)*Math.sin(th),dist*Math.cos(ph),dist*Math.sin(ph)*Math.cos(th));cam.lookAt(0,0,0)}
+function resize(){const w=vp.clientWidth,h=vp.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(vp);
+const ptr=new Map();let pd=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,e);pd=0});
+cv.addEventListener('pointerup',e=>ptr.delete(e.pointerId));
+cv.addEventListener('pointermove',e=>{const p=ptr.get(e.pointerId);if(!p)return;
+ if(ptr.size==2){const [a,b]=[...ptr.values()];const nd=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(pd)dist=Math.min(45,Math.max(10,dist*pd/nd));pd=nd}
+ else{th-=(e.clientX-p.clientX)*.008;ph=Math.min(2.9,Math.max(.05,ph-(e.clientY-p.clientY)*.008))}
+ ptr.set(e.pointerId,e);setCam()});
+cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(45,Math.max(10,dist*(1+e.deltaY*.001)));setCam()},{passive:false});
+
+function lab(txt,v){const el=document.createElement('div');el.className='lb';el.textContent=txt;vp.appendChild(el);labels.push({el,v})}
+function arrow(o,dir,len,col,hl){root.add(new THREE.ArrowHelper(dir.clone().normalize(),o,len,col,hl||Math.min(.45,len*.45),.25))}
+function plate(s,y0,t,r){
+ const sh=new THREE.Shape(),c=3*s;sh.moveTo(c-5,-3);sh.lineTo(c+5,-3);sh.lineTo(c+5,3);sh.lineTo(c-5,3);sh.closePath();
+ const h=new THREE.Path();h.absarc(0,0,r,0,Math.PI*2,true);sh.holes.push(h);
+ const g=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false,curveSegments:48});g.rotateX(-Math.PI/2);
+ const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x6c8cb0,transparent:true,opacity:.35,side:THREE.DoubleSide,metalness:.2,roughness:.6}));
+ m.position.y=y0;root.add(m);
+ const l=new THREE.LineSegments(new THREE.EdgesGeometry(g,30),new THREE.LineBasicMaterial({color:0x44566e}));l.position.y=y0;root.add(l)}
+
+function build(){
+ labels.forEach(l=>l.el.remove());labels=[];
+ while(root.children.length)root.remove(root.children[0]);
+ const F=+$('F').value,d=+$('d').value,t1m=+$('t1').value,t2m=+$('t2').value;
+ const r=d/20,t1=t1m/10,t2=t2m/10;
+ const s1=F*1000/(d*t1m),s2=F*1000/(d*t2m),smax=Math.max(s1,s2),ratio=smax/ADM;
+ const hue=k=>new THREE.Color().setHSL(.33*(1-Math.min(k,1)),.8,.5);
+ // placas: superior (s=+1, jalada +x), inferior (s=-1, jalada -x)
+ const P=[{s:1,y0:0,t:t1,sg:s1},{s:-1,y0:-t2,t:t2,sg:s2}];
+ P.forEach(p=>plate(p.s,p.y0,p.t,r));
+ // perno
+ const bm=new THREE.MeshStandardMaterial({color:0x9aa4b3,transparent:true,opacity:.6,metalness:.5,roughness:.4});
+ const bl=new THREE.Mesh(new THREE.CylinderGeometry(r*.97,r*.97,t1+t2,40),bm);bl.position.y=(t1-t2)/2;root.add(bl);
+ const hd=new THREE.Mesh(new THREE.CylinderGeometry(r*1.5,r*1.5,.5,6),bm);hd.position.y=t1+.25;root.add(hd);
+ const nt=new THREE.Mesh(new THREE.CylinderGeometry(r*1.5,r*1.5,.5,6),bm);nt.position.y=-t2-.25;root.add(nt);
+ // fuerzas externas
+ const L=.8+F/200*4.5;
+ arrow(new THREE.Vector3(8,t1/2,0),new THREE.Vector3(1,0,0),L,0xe5382f);lab('F',new THREE.Vector3(8+L+.8,t1/2+.5,0));
+ arrow(new THREE.Vector3(-8,-t2/2,0),new THREE.Vector3(-1,0,0),L,0xe5382f);lab('F',new THREE.Vector3(-8-L-.8,-t2/2+.5,0));
+ // presión sobre cada placa
+ P.forEach(p=>{
+  const k=p.sg/ADM,col=hue(k),Lm=Math.min(.35+Math.min(k,2)*.7,2*r),yc=p.y0+p.t/2;
+  const rows=p.t>1.4?[.2,.5,.8]:[.5];
+  if(!uni){
+   for(let a=-80;a<=80;a+=20){const rad=a*Math.PI/180,u=new THREE.Vector3(-p.s*Math.cos(rad),0,Math.sin(rad)),len=Math.max(.12,Lm*4/Math.PI*Math.cos(rad));
+    rows.forEach(f=>arrow(u.clone().multiplyScalar(r-len),u,len,col.getHex(),Math.min(.3,len*.5)))}
+  }else{
+   const len=Math.min(Lm,2*r);
+   [-.75,-.375,0,.375,.75].forEach(z=>rows.forEach(f=>arrow(new THREE.Vector3(len*-p.s*-1*0+(-p.s)*-len*0+(p.s>0?len:-len),p.y0+p.t*f,z*r),new THREE.Vector3(-p.s,0,0),len,col.getHex())))}
+  if(showAp){
+   const g=new THREE.PlaneGeometry(2*r,p.t);g.rotateY(Math.PI/2);
+   const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff9a1f,transparent:true,opacity:.38,side:THREE.DoubleSide}));m.position.y=yc;root.add(m);
+   const l=new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0xff9a1f}));l.position.y=yc;root.add(l);
+   lab('A_b = d·t'+(p.s>0?'₁':'₂'),new THREE.Vector3(0,yc,r+1.3))}
+  lab('σ_b = '+p.sg.toFixed(0)+' MPa',new THREE.Vector3(p.s*(r+3.2),p.y0+(p.s>0?p.t+.7:-.7),p.s*-2.4))});
+ // UI
+ $('vF').textContent=F+' kN';$('vd').textContent=d+' mm';$('vt1').textContent=t1m+' mm';$('vt2').textContent=t2m+' mm';
+ $('sg').textContent='σ_b máx = '+smax.toFixed(1)+' MPa';$('sg').style.color=ratio>1?'#e5382f':'';
+ $('A1').textContent=(d*t1m)+' mm²';$('A2').textContent=(d*t2m)+' mm²';
+ $('s1').textContent=s1.toFixed(1)+' MPa';$('s2').textContent=s2.toFixed(1)+' MPa';
+ $('sp').textContent=(smax*4/Math.PI).toFixed(1)+' MPa';
+ $('fs').textContent=(1/ratio).toFixed(2)+(ratio>1?' ✗ aplasta':' ✓');
+ [[1,s1],[2,s2]].forEach(([k,v])=>{const b=$('b'+k);b.style.width=Math.min(100,v/SC*100)+'%';b.style.background=v>ADM?'#e5382f':'#2e9e5b';$('u'+k).style.left=ADM/SC*100+'%';
+  $('l'+k).textContent='Placa '+k+' (t = '+(k==1?t1m:t2m)+' mm): '+v.toFixed(1)+' MPa'});
+ const tau=F*1000/(Math.PI*d*d/4);
+ $('chk').innerHTML='El área de aplastamiento es la <b>proyectada</b>: diámetro × espesor (rectángulo naranja), no el área lateral del cilindro.<br>Gobierna la placa <b>más delgada</b> ('+(t1m<=t2m?'1':'2')+').<br><small>Para comparar: el cortante del mismo perno es τ = F/A = '+tau.toFixed(1)+' MPa (área πd²/4, perpendicular al eje).</small>';
+}
+function tick(){requestAnimationFrame(tick);renderer.render(scene,cam);
+ const w=vp.clientWidth,h=vp.clientHeight;
+ labels.forEach(l=>{const v=l.v.clone().project(cam);l.el.style.left=(v.x*.5+.5)*w+'px';l.el.style.top=(-v.y*.5+.5)*h+'px'})}
+['F','d','t1','t2'].forEach(i=>$(i).addEventListener('input',build));
+$('d1').onclick=()=>{uni=false;$('d1').classList.add('on');$('d2').classList.remove('on');build()};
+$('d2').onclick=()=>{uni=true;$('d2').classList.add('on');$('d1').classList.remove('on');build()};
+$('ap').onclick=e=>{showAp=!showAp;e.currentTarget.classList.toggle('on',showAp);build()};
+$('top').onclick=e=>{const on=e.currentTarget.classList.toggle('on');if(on){th=0;ph=.05}else{th=.7;ph=1.1}setCam()};
+resize();setCam();build();tick();
+</script></body></html>
